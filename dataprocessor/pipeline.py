@@ -1,6 +1,6 @@
 from .leitor import carregar_clientes, carregar_transacoes, carregar_config
-from .validador import validar_cliente, validar_transacao, separar_registros
-from .transformador import transformar_clientes, transformar_transacoes
+from .core.validador import validar_cliente, validar_transacao, separar_registros
+from .core.transformador import transformar_clientes, transformar_transacoes
 from .processador import calcular_total_aprovado, calcular_media_idade
 
 def executar_pipeline(caminho_clientes, caminho_transacoes, caminho_config):
