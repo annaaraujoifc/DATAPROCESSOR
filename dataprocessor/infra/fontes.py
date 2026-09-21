@@ -17,7 +17,12 @@ class FonteDados(ABC):
 
 
 class FonteDadosArquivos(FonteDados):
-    def __init__(self, caminho_clientes: str | Path, caminho_transacoes: str | Path, caminho_config: str | Path):
+    def __init__(
+        self,
+        caminho_clientes: str | Path,
+        caminho_transacoes: str | Path,
+        caminho_config: str | Path,
+    ):
         self.caminho_clientes = caminho_clientes
         self.caminho_transacoes = caminho_transacoes
         self.caminho_config = caminho_config
@@ -46,3 +51,15 @@ class FonteDadosMemoria(FonteDados):
 
     def carregar_config(self) -> dict:
         return dict(self._config)
+
+
+def fonte_a_partir_de_caminhos(
+    caminho_clientes: str | Path,
+    caminho_transacoes: str | Path,
+    caminho_config: str | Path,
+) -> FonteDados:
+    return FonteDadosArquivos(
+        caminho_clientes,
+        caminho_transacoes,
+        caminho_config,
+    )
