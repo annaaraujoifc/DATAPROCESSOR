@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class Cliente:
     id: int | None
@@ -8,9 +9,11 @@ class Cliente:
     idade: int | None
     cidade: str
     data_cadastro: str
+
     @property
     def identificacao(self) -> str:
         return f"#{self.id} {self.nome}"
+
 
 @dataclass(frozen=True)
 class Transacao:
@@ -20,6 +23,7 @@ class Transacao:
     categoria: str
     data: str
     status: str
+
     @property
     def esta_aprovada(self) -> bool:
         return self.status == "aprovado"
