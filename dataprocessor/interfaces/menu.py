@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ..infra.fontes import FonteDadosArquivos
+from ..infra.fontes import fonte_a_partir_de_caminhos
 from ..infra.relatorios import criar_gerador
 from ..services.processamento import executar_processamento
 
@@ -52,13 +52,25 @@ def _ler_caminhos() -> tuple[str, str, str]:
     return caminho_clientes, caminho_transacoes, caminho_config
 
 
+def processar_caminhos(
+    caminho_clientes: str,
+    caminho_transacoes: str,
+    caminho_config: str,
+):
+    fonte = fonte_a_partir_de_caminhos(
+        caminho_clientes,
+        caminho_transacoes,
+        caminho_config,
+    )
+    return executar_processamento(fonte)
+
+
 def processar(caminhos: tuple[str, str, str] | None = None):
     if caminhos is None:
         caminhos = _ler_caminhos()
 
     try:
-        fonte = FonteDadosArquivos(*caminhos)
-        resultado = executar_processamento(fonte)
+        resultado = processar_caminhos(*caminhos)
     except (OSError, ValueError, KeyError) as erro:
         print(f"[ERRO] Não foi possível processar: {erro}")
         return None
