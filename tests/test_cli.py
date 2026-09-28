@@ -31,6 +31,7 @@ class CliTestCase(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
+
             self.assertEqual(processo.returncode, 0, processo.stderr)
             relatorio = json.loads((saida / "relatorio.json").read_text(encoding="utf-8"))
             self.assertEqual(relatorio["metricas"]["total_aprovado"], 150.50)
