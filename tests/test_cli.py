@@ -160,5 +160,45 @@ class CliTestCase(unittest.TestCase):
         self.assertGreaterEqual(processo.stdout.count("Clientes válidos:"), 2)
 
 
+    def test_processar_caminhos_tem_mesmo_total_aprovado_da_cli(self):
+        projeto = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as pasta:
+            processo = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "dataprocessor",
+                    "--clientes",
+                    str(projeto / "data/clientes.csv"),
+                    "--transacoes",
+                    str(projeto / "data/transacoes.csv"),
+                    "--config",
+                    str(projeto / "data/config.json"),
+                    "--formato",
+                    "json",
+                    "--output",
+                    pasta,
+                ],
+                cwd=projeto,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(processo.returncode, 0, processo.stderr)
+            relatorio = json.loads(
+                (Path(pasta) / "relatorio.json").read_text(encoding="utf-8")
+            )
+            resultado = processar_caminhos(
+                str(projeto / "data/clientes.csv"),
+                str(projeto / "data/transacoes.csv"),
+                str(projeto / "data/config.json"),
+            )
+
+            self.assertEqual(
+                resultado.total_aprovado,
+                relatorio["metricas"]["total_aprovado"],
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
