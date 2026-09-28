@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from dataprocessor.interfaces.menu import processar_caminhos
+
 
 class CliTestCase(unittest.TestCase):
     def test_cli_salva_relatorio_json_e_log(self):
