@@ -5,6 +5,9 @@ from ..infra.relatorios import criar_gerador
 from ..services.processamento import executar_processamento
 
 
+FORMATOS_VALIDOS = {"texto", "json", "csv"}
+
+
 def _ler_entrada(prompt: str, padrao: str = "") -> str:
     try:
         valor = input(prompt)
@@ -15,7 +18,7 @@ def _ler_entrada(prompt: str, padrao: str = "") -> str:
 
 
 def _ler_caminho_arquivo(
-    prompt: str, padrao: str, *, exigir_existencia: bool = True
+    prompt: str, padrao: str, *, exigir_existencia: bool = False
 ) -> str:
     while True:
         valor = _ler_entrada(prompt, padrao)
@@ -33,7 +36,7 @@ def _ler_caminho_arquivo(
         return str(caminho_path)
 
 
-def processar():
+def _ler_caminhos() -> tuple[str, str, str]:
     caminho_clientes = _ler_caminho_arquivo(
         "Caminho do CSV de clientes [data/clientes.csv]: ",
         "data/clientes.csv",
@@ -46,9 +49,20 @@ def processar():
         "Caminho do JSON de config [data/config.json]: ",
         "data/config.json",
     )
+    return caminho_clientes, caminho_transacoes, caminho_config
 
-    fonte = FonteDadosArquivos(caminho_clientes, caminho_transacoes, caminho_config)
-    resultado = executar_processamento(fonte)
+
+def processar(caminhos: tuple[str, str, str] | None = None):
+    if caminhos is None:
+        caminhos = _ler_caminhos()
+
+    try:
+        fonte = FonteDadosArquivos(*caminhos)
+        resultado = executar_processamento(fonte)
+    except (OSError, ValueError, KeyError) as erro:
+        print(f"[ERRO] Não foi possível processar: {erro}")
+        return None
+
     print(f"Clientes válidos: {len(resultado.clientes)}")
     print(f"Transações válidas: {len(resultado.transacoes)}")
     return resultado
@@ -56,12 +70,21 @@ def processar():
 
 def exibir_relatorio(resultado):
     formato = _ler_entrada("Formato (texto/json/csv) [texto]: ", "texto") or "texto"
-    gerador = criar_gerador(formato)
-    print(gerador.render(resultado))
+
+    if formato not in FORMATOS_VALIDOS:
+        print(f"Formato inválido: '{formato}'.")
+        return
+
+    print(criar_gerador(formato).render(resultado))
 
 
 def salvar_relatorio(resultado):
     formato = _ler_entrada("Formato (texto/json/csv) [texto]: ", "texto") or "texto"
+
+    if formato not in FORMATOS_VALIDOS:
+        print(f"Formato inválido: '{formato}'.")
+        return
+
     caminho = (
         _ler_entrada(
             "Caminho do arquivo [output/relatorio.txt]: ", "output/relatorio.txt"
@@ -81,30 +104,57 @@ def salvar_relatorio(resultado):
 
 def menu_principal() -> int:
     resultado = None
+    ultimos_caminhos = None
 
-    try:
-        while True:
-            print("\n=== DataProcessor — Menu ===")
-            print("1. Processar dados")
-            print("2. Exibir relatório")
-            print("3. Salvar relatório em arquivo")
-            print("4. Sair")
-            opcao = _ler_entrada("Escolha uma opção: ")
+    while True:
+        print("\n=== DataProcessor — Menu ===")
+        print("1. Processar dados")
+        print("2. Exibir relatório")
+        print("3. Salvar relatório em arquivo")
+        print("4. Reprocessar com os últimos caminhos usados")
+        print("5. Sair")
 
-            if opcao == "1":
-                resultado = processar()
-            elif opcao == "2":
-                exibir_relatorio(resultado)
-            elif opcao == "3":
-                salvar_relatorio(resultado)
-            elif opcao == "4":
-                break
-            elif opcao == "":
+        opcao = _ler_entrada("Escolha uma opção: ")
+        opcoes_validas = {"1", "2", "3", "4", "5"}
+
+        if opcao not in opcoes_validas:
+            print(f"Opção inválida: '{opcao}'. Escolha 1, 2, 3, 4 ou 5.")
+            continue
+
+        if opcao == "1":
+            caminhos = _ler_caminhos()
+            novo_resultado = processar(caminhos)
+
+            if novo_resultado is not None:
+                resultado = novo_resultado
+                ultimos_caminhos = caminhos
+
+        elif opcao == "2":
+            if resultado is None:
+                print("Nenhum dado processado ainda. Escolha a opção 1 primeiro.")
                 continue
-            else:
-                print("Opção inválida. Tente novamente.")
-    except EOFError:
-        print("\nEncerrando menu.")
+
+            exibir_relatorio(resultado)
+
+        elif opcao == "3":
+            if resultado is None:
+                print("Nenhum dado processado ainda. Escolha a opção 1 primeiro.")
+                continue
+
+            salvar_relatorio(resultado)
+
+        elif opcao == "4":
+            if ultimos_caminhos is None:
+                print("Nenhum processamento bem-sucedido ainda. Escolha a opção 1 primeiro.")
+                continue
+
+            novo_resultado = processar(ultimos_caminhos)
+
+            if novo_resultado is not None:
+                resultado = novo_resultado
+
+        elif opcao == "5":
+            break
 
     return 0
 
