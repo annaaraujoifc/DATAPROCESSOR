@@ -44,7 +44,7 @@ class CliTestCase(unittest.TestCase):
         processo = subprocess.run(
             [sys.executable, "-m", "dataprocessor.interfaces.menu"],
             cwd=projeto,
-            input="4\n",
+            input="5\n",
             capture_output=True,
             text=True,
         )
@@ -69,7 +69,7 @@ class CliTestCase(unittest.TestCase):
                 f"{projeto / 'data/transacoes.csv'}\n"
                 "data\n"
                 f"{projeto / 'data/config.json'}\n"
-                "4\n"
+                "5\n"
             ),
             capture_output=True,
             text=True,
@@ -77,6 +77,87 @@ class CliTestCase(unittest.TestCase):
 
         self.assertEqual(processo.returncode, 0, processo.stderr)
         self.assertIn("é um diretório. Informe o caminho do arquivo.", processo.stdout)
+        self.assertIn("Clientes válidos:", processo.stdout)
+
+    def test_menu_impede_relatorio_antes_do_processamento(self):
+        projeto = Path(__file__).resolve().parents[1]
+        processo = subprocess.run(
+            [sys.executable, "-m", "dataprocessor.interfaces.menu"],
+            cwd=projeto,
+            input="2\n5\n",
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(processo.returncode, 0, processo.stderr)
+        self.assertIn(
+            "Nenhum dado processado ainda. Escolha a opção 1 primeiro.",
+            processo.stdout,
+        )
+
+    def test_menu_rejeita_opcao_invalida(self):
+        projeto = Path(__file__).resolve().parents[1]
+        processo = subprocess.run(
+            [sys.executable, "-m", "dataprocessor.interfaces.menu"],
+            cwd=projeto,
+            input="9\n5\n",
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(processo.returncode, 0, processo.stderr)
+        self.assertIn("Opção inválida: '9'.", processo.stdout)
+
+    def test_menu_mantem_resultado_apos_falha_de_processamento(self):
+        projeto = Path(__file__).resolve().parents[1]
+        processo = subprocess.run(
+            [sys.executable, "-m", "dataprocessor.interfaces.menu"],
+            cwd=projeto,
+            input=(
+                "1\n"
+                "arquivo-inexistente.csv\n"
+                "data/transacoes.csv\n"
+                "data/config.json\n"
+                "1\n"
+                "data/clientes.csv\n"
+                "data/transacoes.csv\n"
+                "data/config.json\n"
+                "1\n"
+                "arquivo-inexistente.csv\n"
+                "data/transacoes.csv\n"
+                "data/config.json\n"
+                "2\n"
+                "xml\n"
+                "5\n"
+            ),
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(processo.returncode, 0, processo.stderr)
+        self.assertIn("[ERRO] Não foi possível processar:", processo.stdout)
+        self.assertIn("Clientes válidos:", processo.stdout)
+        self.assertIn("Formato inválido: 'xml'.", processo.stdout)
+
+    def test_menu_reprocessa_com_ultimos_caminhos(self):
+        projeto = Path(__file__).resolve().parents[1]
+        processo = subprocess.run(
+            [sys.executable, "-m", "dataprocessor.interfaces.menu"],
+            cwd=projeto,
+            input=(
+                "1\n"
+                "data/clientes.csv\n"
+                "data/transacoes.csv\n"
+                "data/config.json\n"
+                "4\n"
+                "5\n"
+            ),
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(processo.returncode, 0, processo.stderr)
+        self.assertGreaterEqual(processo.stdout.count("Clientes válidos:"), 2)
 
 
 if __name__ == "__main__":
